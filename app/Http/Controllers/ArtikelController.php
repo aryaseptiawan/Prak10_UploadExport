@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Artikel;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 
 class ArtikelController extends Controller
 {
@@ -14,7 +15,7 @@ class ArtikelController extends Controller
      */
     public function index()
     {
-        //
+        return view('artikel.create');
     }
 
     /**
@@ -24,7 +25,7 @@ class ArtikelController extends Controller
      */
     public function create()
     {
-        return view('articles.create');
+        //
     }
 
     /**
@@ -35,7 +36,21 @@ class ArtikelController extends Controller
      */
     public function store(Request $request)
     {
-        //
+
+        if ($request->file('image')) {
+            $image_name = $request->file('image')->store('images', 'public');
+
+            Artikel::create([
+                'title' => $request->title,
+                'content' => $request->content,
+                'featured_image' => $image_name
+            ]);
+    
+            return 'Artikel berhasil disimpan';
+        }
+
+        return 'Artikel gagal disimpan';
+
     }
 
     /**
@@ -55,9 +70,10 @@ class ArtikelController extends Controller
      * @param  \App\Models\Artikel  $artikel
      * @return \Illuminate\Http\Response
      */
-    public function edit(Artikel $artikel)
+    public function edit($id)
     {
-        //
+        $artikel = Artikel::find($id);
+        return view('artikel.edit', compact('artikel'));
     }
 
     /**
@@ -67,9 +83,22 @@ class ArtikelController extends Controller
      * @param  \App\Models\Artikel  $artikel
      * @return \Illuminate\Http\Response
      */
-    public function update(Request $request, Artikel $artikel)
+    public function update(Request $request, $id)
     {
-        //
+        $artikel = Artikel::find($id);
+
+        $artikel->title = $request->title;
+        $artikel->content = $request->content;
+
+        if($artikel->featured_image && file_exists(storage_path('app/public' . $artikel->featured_image))){
+            Storage::delete('public/' . $artikel->featured_image);
+        }
+
+        $image_name = $request->file('image')->store('images', 'public');
+        $artikel->featured_image = $image_name;
+
+        $artikel->save();
+        return 'Artikel berhasil diubah';
     }
 
     /**
