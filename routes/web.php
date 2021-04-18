@@ -1,5 +1,7 @@
 <?php
 
+use App\Http\Controllers\ArtikelController;
+use App\Http\Controllers\MahasiswaController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -16,3 +18,8 @@ use Illuminate\Support\Facades\Route;
 Route::get('/', function () {
     return view('welcome');
 });
+
+Route::resource('/mahasiswa', MahasiswaController::class);
+Route::get('mahasiswa/nilai/{nim}', [MahasiswaController::class, 'show_khs'])->name('mahasiswa.khs');
+
+Route::resource('/artikel', ArtikelController::class);
