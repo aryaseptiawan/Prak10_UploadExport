@@ -4,7 +4,9 @@ namespace App\Http\Controllers;
 
 use App\Models\Mahasiswa;
 use App\Models\Kelas;
+use Barryvdh\DomPDF\Facade as PDF;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 
 class MahasiswaController extends Controller
 {
@@ -57,12 +59,15 @@ class MahasiswaController extends Controller
         $request->validate([
             'nim' => 'required',
             'nama' => 'required',
+            'foto' => 'required|mimes:jpg,png|dimensions:max_width=100,max_height=100',
             'kelas' => 'required',
             'jurusan' => 'required',
             'no_handphone' => 'required',
             'email' => 'required|email',
             'tanggal_lahir' => 'required|date'
         ]);
+
+
 
         //eloquent untuk insert data mahasiswa
         $mahasiswa = new Mahasiswa();
@@ -72,6 +77,12 @@ class MahasiswaController extends Controller
         $mahasiswa->no_handphone = $request->get('no_handphone');
         $mahasiswa->email = $request->get('email');
         $mahasiswa->tanggal_lahir = $request->get('tanggal_lahir');
+
+        //Menyimpan gambar
+        if($request->file('foto')){
+            $image_dir = $request->file('foto')->store('images/mahasiswa/profil', 'public');
+            $mahasiswa->foto_profil = $image_dir;
+        }
 
         //Menyimpan id kelas yang merupakan foreign key
         $kelas = new Kelas();
@@ -136,6 +147,7 @@ class MahasiswaController extends Controller
         $request->validate([
             'nim' => 'required',
             'nama' => 'required',
+            'foto' => 'nullable|mimes:jpg,png|dimensions:max_width=100,max_height=100',
             'kelas' => 'required',
             'jurusan' => 'required',
             'no_handphone' => 'required',
@@ -151,6 +163,17 @@ class MahasiswaController extends Controller
         $mahasiswa->no_handphone = $request->get('no_handphone');
         $mahasiswa->email = $request->get('email');
         $mahasiswa->tanggal_lahir = $request->get('tanggal_lahir');
+
+        //Menghapus gambar profil yang sama
+        if($mahasiswa->foto_profil && file_exists(storage_path('app/public' . $mahasiswa->foto_profil))){
+            Storage::delete('public/' . $mahasiswa->foto_profil);
+        }
+
+        //Menyimpan gambar perubahan jika ada
+        if($request->file('foto')){
+            $image_dir = $request->file('foto')->store('images/mahasiswa/profil', 'public');
+            $mahasiswa->foto_profil = $image_dir;
+        }
 
         //Menyimpan id kelas yang merupakan foreign key
         $kelas = new Kelas();
@@ -175,5 +198,11 @@ class MahasiswaController extends Controller
 
         //jika berhasil, kembalike halaman utama
         return redirect()->route('mahasiswa.index')->with('success', 'Mahasiswa berhasil dihapus');
+    }
+
+    public function cetak_khs($nim){
+        $mahasiswa = Mahasiswa::with('kelas', 'matakuliah')->where('nim', $nim)->first();
+        $pdf = PDF::loadView('mahasiswa.khs_cetak', compact('mahasiswa'));
+        return $pdf->stream();
     }
 }
